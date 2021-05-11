@@ -53,13 +53,6 @@ def draw(canvas):
     sleeping_events.append([0, spaceship_fire_core])
     sleeping_events.append([0, garbage_init_core])
 
-    # SPACE_GARBAGE
-    # sleeping_events.insert(0, [0, fly_garbage(canvas, 0, space_garbage_small)])
-    # sleeping_events.insert(0, [0, fly_garbage(canvas, 50, space_garbage_xl)])
-    # sleeping_events.insert(0, [0, fly_garbage(canvas, 100, space_garbage_large)])
-    # sleeping_events.insert(0, [0, fly_garbage(canvas, 100, space_garbage_hubble)])
-    # sleeping_events.insert(0, [0, fill_orbit_with_garbage(canvas)])
-
     while True:
         min_delay, _ = min(sleeping_events, key=lambda event: event[0])
         sleeping_events = [[timeout - min_delay, event] for timeout, event in sleeping_events]
