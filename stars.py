@@ -39,7 +39,7 @@ def get_star_corutines(canvas, count):
     max_star_x = get_max_writable_x(max_x, STAR_X_WIDTH)
 
     star_cores = []
-    for i in range(count):
+    for _ in range(count):
         y = random.randint(MIN_CANVAS_COORDINATE, max_star_y)
         x = random.randint(MIN_CANVAS_COORDINATE, max_star_x)
         symbol = random.choice(STAR_SYMBOLS)

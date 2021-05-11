@@ -24,8 +24,10 @@ frame_rows, frame_cols = get_frame_size(frame_1)
 
 async def animate_spaceship(canvas, start_row, start_column):
     draw_frame(canvas, start_row, start_column, frame_1)
+    await draw_spaceship_frames(canvas, start_row, start_column)
 
-    # TODO as async
+
+async def draw_spaceship_frames(canvas, start_row, start_column):
     for frame in itertools.cycle([frame_1, frame_2]):
         rows_direction, columns_direction, space_pressed = read_controls(canvas)
         start_row, start_column = get_spaceship_new_yx(start_row, start_column, rows_direction, columns_direction, canvas)
