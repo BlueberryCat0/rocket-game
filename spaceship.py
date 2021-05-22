@@ -6,6 +6,7 @@ from typing import Tuple
 
 from curses_tools import draw_frame, read_controls, get_frame_size
 from canvas_constants import CANVAS_FRAME_WIDTH, MIN_CANVAS_COORDINATE
+from physics import update_speed
 
 
 def get_spaceship_frames(frame_1_name, frame_2_name) -> Tuple[str, str]:
@@ -28,16 +29,28 @@ async def animate_spaceship(canvas, start_row, start_column):
 
 
 async def draw_spaceship_frames(canvas, start_row, start_column):
+    row_speed = column_speed = 0
+
     for frame in itertools.cycle([frame_1, frame_2]):
         rows_direction, columns_direction, space_pressed = read_controls(canvas)
-        start_row, start_column = get_spaceship_new_yx(start_row, start_column, rows_direction, columns_direction, canvas)
+
+        row_speed, column_speed = update_speed(
+            row_speed, column_speed, rows_direction, columns_direction,
+        )
+
+        start_row, start_column = get_spaceship_new_yx(
+            start_row, start_column, row_speed, column_speed, canvas,
+        )
 
         draw_frame(canvas, start_row, start_column, frame)
         await asyncio.sleep(0)
         draw_frame(canvas, start_row, start_column, frame, negative=True)
 
 
-def get_spaceship_new_yx(start_row, start_column, rows_direction, columns_direction, canvas):
+def get_spaceship_new_yx(
+    start_row, start_column, rows_direction, columns_direction, canvas,
+):
+
     max_y, max_x = canvas.getmaxyx()
 
     row = start_row + rows_direction  # y
