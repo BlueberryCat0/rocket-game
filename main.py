@@ -1,11 +1,10 @@
-import asyncio
 import curses
 import random
 import time
 
 from space_garbage import fly_garbage, space_garbage
 from spaceship import animate_spaceship, get_fire
-from stars import get_star_corutines
+from stars import get_star_coroutines
 from canvas_constants import MIN_CANVAS_COORDINATE, get_max_writable_x
 from awaitable_sleep import AwaitableSleep
 
@@ -24,9 +23,7 @@ async def fill_orbit_with_garbage(canvas):
         sleeping_events.append(
             [0, fly_garbage(canvas, garbage_x, space_garbage.frames['trash_xl'])]
         )
-        await asyncio.sleep(0)
         await AwaitableSleep(1)
-
 
 
 def draw(canvas):
@@ -37,7 +34,7 @@ def draw(canvas):
     global sleeping_events
 
     # STARS
-    star_cores = get_star_corutines(canvas, 300)
+    star_cores = get_star_coroutines(canvas, 300)
 
     # SPACESHIP
     spaceship_core = animate_spaceship(canvas, max_y/2, max_x/2)

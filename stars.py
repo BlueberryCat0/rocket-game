@@ -1,4 +1,3 @@
-import asyncio
 import random
 import curses
 
@@ -12,28 +11,23 @@ STAR_SYMBOLS = list('+*.:')
 
 async def blink(canvas, row, column, symbol='*'):
     canvas.addstr(row, column, symbol, curses.A_DIM)
-    await asyncio.sleep(0)
-    await AwaitableSleep(random.randint(0,3))
+    await AwaitableSleep(random.randint(0, 3))
 
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        await asyncio.sleep(0)
         await AwaitableSleep(2)
 
         canvas.addstr(row, column, symbol)
-        await asyncio.sleep(0)
         await AwaitableSleep(0.3)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        await asyncio.sleep(0)
         await AwaitableSleep(0.5)
 
         canvas.addstr(row, column, symbol)
-        await asyncio.sleep(0)
         await AwaitableSleep(0.3)
 
 
-def get_star_corutines(canvas, count):
+def get_star_coroutines(canvas, count):
     max_y, max_x = canvas.getmaxyx()
     max_star_y = get_max_writable_y(max_y, STAR_Y_WIDTH)
     max_star_x = get_max_writable_x(max_x, STAR_X_WIDTH)
