@@ -6,7 +6,7 @@ from space_garbage import fly_garbage, space_garbage
 from spaceship import animate_spaceship, get_fire
 from stars import get_star_coroutines
 from canvas_constants import MIN_CANVAS_COORDINATE, get_max_writable_x
-from awaitable_sleep import AwaitableSleep
+from awaitable_sleep import AwaitableSleep, AwaitableCoroAdder
 
 
 TIC_TIMEOUT = 0.1
@@ -23,7 +23,7 @@ async def fill_orbit_with_garbage(canvas):
         sleeping_events.append(
             [0, fly_garbage(canvas, garbage_x, space_garbage.frames['trash_xl'])]
         )
-        await AwaitableSleep(1)
+        await AwaitableSleep(2)
 
 
 def draw(canvas):
@@ -67,6 +67,10 @@ def draw(canvas):
             else:
                 seconds_to_sleep = getattr(sleep_command, 'seconds', TIC_TIMEOUT)
                 sleeping_events.append([seconds_to_sleep, event[1]])
+
+                if isinstance(sleep_command, AwaitableCoroAdder):
+                    sleeping_events.append(sleep_command.event)
+
             canvas.refresh()
 
 

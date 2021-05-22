@@ -1,11 +1,11 @@
-import curses
 import asyncio
+import curses
 import itertools
-
 from typing import Tuple
 
-from curses_tools import draw_frame, read_controls, get_frame_size
+from awaitable_sleep import AwaitableCoroAdder
 from canvas_constants import CANVAS_FRAME_WIDTH, MIN_CANVAS_COORDINATE
+from curses_tools import draw_frame, read_controls, get_frame_size
 from physics import update_speed
 
 
@@ -33,6 +33,9 @@ async def draw_spaceship_frames(canvas, start_row, start_column):
 
     for frame in itertools.cycle([frame_1, frame_2]):
         rows_direction, columns_direction, space_pressed = read_controls(canvas)
+
+        if space_pressed:
+            await add_fire_event(canvas, start_row, start_column)
 
         row_speed, column_speed = update_speed(
             row_speed, column_speed, rows_direction, columns_direction,
@@ -103,3 +106,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
 def get_fire(canvas):
     max_y, max_x = canvas.getmaxyx()
     return fire(canvas, max_y/2, max_x/2 + frame_cols/2)
+
+
+async def add_fire_event(canvas, row, col):
+    await AwaitableCoroAdder([0, fire(canvas, row, col + frame_cols/2)])
