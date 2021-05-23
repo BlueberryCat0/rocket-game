@@ -2,26 +2,35 @@ import curses
 import random
 import time
 
+from awaitable_sleep import AwaitableSleep, AwaitableCoroAdder
+from canvas_constants import MIN_CANVAS_COORDINATE, get_max_writable_x
+from obstacles import show_obstacles
 from space_garbage import fly_garbage, space_garbage
 from spaceship import animate_spaceship, get_fire
 from stars import get_star_coroutines
-from canvas_constants import MIN_CANVAS_COORDINATE, get_max_writable_x
-from awaitable_sleep import AwaitableSleep, AwaitableCoroAdder
-
 
 TIC_TIMEOUT = 0.1
 
 sleeping_events = []
 
+obstacles = []
+
 
 async def fill_orbit_with_garbage(canvas):
+    global sleeping_events
+    global obstacles
+
     _, max_x = canvas.getmaxyx()
     while True:
-        global sleeping_events
         max_garbage_x = get_max_writable_x(max_x, 20)
         garbage_x = random.randint(MIN_CANVAS_COORDINATE, max_garbage_x)
         sleeping_events.append(
-            [0, fly_garbage(canvas, garbage_x, space_garbage.frames['trash_xl'])]
+            [
+                0,
+                fly_garbage(
+                    canvas, garbage_x, space_garbage.frames['trash_xl'], obstacles=obstacles,
+                )
+            ]
         )
         await AwaitableSleep(2)
 
@@ -32,6 +41,7 @@ def draw(canvas):
     canvas.nodelay(True)
 
     global sleeping_events
+    global obstacles
 
     # STARS
     star_cores = get_star_coroutines(canvas, 300)
@@ -49,6 +59,7 @@ def draw(canvas):
     sleeping_events.append([0, spaceship_core])
     sleeping_events.append([0, spaceship_fire_core])
     sleeping_events.append([0, garbage_init_core])
+    sleeping_events.append([0, show_obstacles(canvas, obstacles)])
 
     while True:
         min_delay, _ = min(sleeping_events, key=lambda event: event[0])
