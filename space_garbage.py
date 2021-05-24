@@ -40,6 +40,7 @@ async def fly_garbage(canvas, column, garbage_frame, obstacles, speed=0.5):
         Animate garbage, flying from top to bottom.
         Сolumn position will stay same, as specified on start.
     """
+    from main import obstacles_in_last_collisions
 
     rows_number, columns_number = canvas.getmaxyx()
 
@@ -58,5 +59,9 @@ async def fly_garbage(canvas, column, garbage_frame, obstacles, speed=0.5):
         await asyncio.sleep(0)
         draw_frame(canvas, row, column, garbage_frame, negative=True)
         row += speed
+
+        if obstacle in obstacles_in_last_collisions:
+            obstacles_in_last_collisions.remove(obstacle)
+            break
 
     obstacles.remove(obstacle)

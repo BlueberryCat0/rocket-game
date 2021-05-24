@@ -104,8 +104,11 @@ async def fire(canvas, start_row, start_column, obstacles, rows_speed=-0.3, colu
 
 
 def check_hit(fire_row, fire_column, obstacles: list) -> bool:
+    from main import obstacles_in_last_collisions
+
     for obstacle in obstacles:
         if obstacle.has_collision(fire_row, fire_column):
+            obstacles_in_last_collisions.append(obstacle)
             return True
     return False
 

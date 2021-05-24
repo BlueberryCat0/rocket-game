@@ -12,8 +12,8 @@ from stars import get_star_coroutines
 TIC_TIMEOUT = 0.1
 
 sleeping_events = []
-
 obstacles = []
+obstacles_in_last_collisions = []
 
 
 async def fill_orbit_with_garbage(canvas):
