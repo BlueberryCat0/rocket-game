@@ -3,7 +3,6 @@ import curses
 import itertools
 from typing import Tuple
 
-from awaitable_sleep import AwaitableCoroAdder
 from canvas_constants import CANVAS_FRAME_WIDTH, MIN_CANVAS_COORDINATE
 from curses_tools import draw_frame, read_controls, get_frame_size
 from physics import update_speed
@@ -23,19 +22,19 @@ frame_1, frame_2 = get_spaceship_frames('frames/rocket/rocket_frame_1.txt', 'fra
 frame_rows, frame_cols = get_frame_size(frame_1)
 
 
-async def animate_spaceship(canvas, start_row, start_column):
+async def animate_spaceship(canvas, start_row, start_column, events, obstacles):
     draw_frame(canvas, start_row, start_column, frame_1)
-    await draw_spaceship_frames(canvas, start_row, start_column)
+    await draw_spaceship_frames(canvas, start_row, start_column, events, obstacles)
 
 
-async def draw_spaceship_frames(canvas, start_row, start_column):
+async def draw_spaceship_frames(canvas, start_row, start_column, events, obstacles):
     row_speed = column_speed = 0
 
     for frame in itertools.cycle([frame_1, frame_2]):
         rows_direction, columns_direction, space_pressed = read_controls(canvas)
 
         if space_pressed:
-            await add_fire_event(canvas, start_row, start_column)
+            await add_fire_event(canvas, start_row, start_column, events, obstacles)
 
         row_speed, column_speed = update_speed(
             row_speed, column_speed, rows_direction, columns_direction,
@@ -72,9 +71,8 @@ def get_spaceship_new_yx(
     return row, col
 
 
-async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
+async def fire(canvas, start_row, start_column, obstacles, rows_speed=-0.3, columns_speed=0,):
     """Display animation of gun shot, direction and speed can be specified."""
-
     row, column = start_row, start_column
 
     canvas.addstr(round(row), round(column), '*')
@@ -101,6 +99,15 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         canvas.addstr(round(row), round(column), ' ')
         row += rows_speed
         column += columns_speed
+        if check_hit(row, column, obstacles):
+            break
+
+
+def check_hit(fire_row, fire_column, obstacles: list) -> bool:
+    for obstacle in obstacles:
+        if obstacle.has_collision(fire_row, fire_column):
+            return True
+    return False
 
 
 def get_fire(canvas):
@@ -108,5 +115,6 @@ def get_fire(canvas):
     return fire(canvas, max_y/2, max_x/2 + frame_cols/2)
 
 
-async def add_fire_event(canvas, row, col):
-    await AwaitableCoroAdder([0, fire(canvas, row, col + frame_cols/2)])
+async def add_fire_event(canvas, row, col, events, obstacles):
+    event = [0, fire(canvas, row, col + frame_cols/2, obstacles=obstacles)]
+    events.append(event)

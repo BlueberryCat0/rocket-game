@@ -13,7 +13,6 @@ def read_controls(canvas):
 
     while True:
         pressed_key_code = canvas.getch()
-        # print(pressed_key_code)
 
         if pressed_key_code == -1:
             # https://docs.python.org/3/library/curses.html#curses.window.getch

@@ -16,7 +16,6 @@ async def blink(canvas, row, column, symbol='*'):
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
         await AwaitableSleep(2)
-
         canvas.addstr(row, column, symbol)
         await AwaitableSleep(0.3)
 
