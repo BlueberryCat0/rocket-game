@@ -1,6 +1,7 @@
 import asyncio
 
 from curses_tools import draw_frame, get_frame_size
+from explosion import explode
 from obstacles import Obstacle
 
 
@@ -35,6 +36,10 @@ class SpaceGarbage:
 space_garbage = SpaceGarbage()
 
 
+def get_garbage_center(current_row, current_col, frame_row_size, frame_col_size):
+    return current_row + frame_row_size / 2, current_col + frame_col_size / 2
+
+
 async def fly_garbage(canvas, column, garbage_frame, obstacles, speed=0.5):
     """
         Animate garbage, flying from top to bottom.
@@ -62,6 +67,11 @@ async def fly_garbage(canvas, column, garbage_frame, obstacles, speed=0.5):
 
         if obstacle in obstacles_in_last_collisions:
             obstacles_in_last_collisions.remove(obstacle)
-            break
+            obstacles.remove(obstacle)
+            explode_row, explode_col = get_garbage_center(
+                row, column, row_size, col_size
+            )
+            await explode(canvas, explode_row, explode_col)
+            return
 
     obstacles.remove(obstacle)
