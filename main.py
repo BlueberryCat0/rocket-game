@@ -26,7 +26,7 @@ DEBUG = False
 TIC_TIMEOUT = 0.1
 YEAR_IN_SECONDS = 1.5
 
-SPACE_GUN_INIT_AFTER_YEAR = 2020
+SPACE_GUN_INIT_YEAR = 2020
 
 sleeping_events = []
 obstacles = []
@@ -58,7 +58,7 @@ async def animate_spaceship(canvas, start_row, start_column):
     for frame in itertools.cycle([spaceship_frame_1, spaceship_frame_2]):
         rows_direction, columns_direction, space_pressed = read_controls(canvas)
 
-        if space_pressed and year > SPACE_GUN_INIT_AFTER_YEAR:
+        if space_pressed and year >= SPACE_GUN_INIT_YEAR:
             await add_fire_event(canvas, start_row, start_column, sleeping_events, obstacles)
 
         row_speed, column_speed = update_speed(
