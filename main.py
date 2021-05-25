@@ -1,18 +1,32 @@
+import asyncio
 import curses
+import itertools
 import random
 import time
 
 from awaitable_sleep import AwaitableSleep
 from canvas_constants import get_max_writable_x, MIN_CANVAS_COORDINATE
-from curses_tools import draw_frame
+from curses_tools import draw_frame, read_controls
 from game_scenario import get_garbage_delay_tics, PHRASES, DEFAULT_PHRASE
 from obstacles import show_obstacles
+from physics import update_speed
 from space_garbage import space_garbage, fly_garbage
-from spaceship import animate_spaceship
+from spaceship import (
+    spaceship_frame_1, spaceship_frame_2,
+    spaceship_row_size, spaceship_col_size,
+    add_fire_event,
+    get_spaceship_new_yx,
+    show_gameover,
+)
 from stars import get_star_coroutines
+
+
+DEBUG = False
 
 TIC_TIMEOUT = 0.1
 YEAR_IN_SECONDS = 1.5
+
+SPACE_GUN_INIT_AFTER_YEAR = 2020
 
 sleeping_events = []
 obstacles = []
@@ -25,6 +39,8 @@ class GameProgressWindowSettings:
     WIDTH = 60
     BORDER_DELTA = 1
 
+    CONTENT_START_ROW = HEIGHT // 2
+
     @classmethod
     def get_row_start(cls, max_y):
         return max_y - cls.BORDER_DELTA - cls.HEIGHT
@@ -32,6 +48,36 @@ class GameProgressWindowSettings:
     @classmethod
     def get_col_start(cls):
         return cls.BORDER_DELTA
+
+
+async def animate_spaceship(canvas, start_row, start_column):
+    draw_frame(canvas, start_row, start_column, spaceship_frame_1)
+
+    row_speed = column_speed = 0
+
+    for frame in itertools.cycle([spaceship_frame_1, spaceship_frame_2]):
+        rows_direction, columns_direction, space_pressed = read_controls(canvas)
+
+        if space_pressed and year > SPACE_GUN_INIT_AFTER_YEAR:
+            await add_fire_event(canvas, start_row, start_column, sleeping_events, obstacles)
+
+        row_speed, column_speed = update_speed(
+            row_speed, column_speed, rows_direction, columns_direction,
+        )
+
+        start_row, start_column = get_spaceship_new_yx(
+            start_row, start_column, row_speed, column_speed, canvas,
+        )
+
+        for obstacle in obstacles:
+            if obstacle.has_collision(
+                start_row, start_column, spaceship_row_size, spaceship_col_size
+            ):
+                sleeping_events.append([0, show_gameover(canvas)])
+
+        draw_frame(canvas, start_row, start_column, frame)
+        await asyncio.sleep(0)
+        draw_frame(canvas, start_row, start_column, frame, negative=True)
 
 
 async def fill_orbit_with_garbage(canvas):
@@ -74,13 +120,13 @@ async def show_game_progress(canvas):
         content = f'Year - {year}: {phrase}'
         draw_frame(
             canvas,
-            GameProgressWindowSettings.HEIGHT // 2, GameProgressWindowSettings.BORDER_DELTA,
+            GameProgressWindowSettings.CONTENT_START_ROW, GameProgressWindowSettings.BORDER_DELTA,
             content,
         )
         await AwaitableSleep(1)
         draw_frame(
             canvas,
-            GameProgressWindowSettings.HEIGHT // 2, GameProgressWindowSettings.BORDER_DELTA,
+            GameProgressWindowSettings.CONTENT_START_ROW, GameProgressWindowSettings.BORDER_DELTA,
             content,
             negative=True,
         )
@@ -92,10 +138,11 @@ def draw(canvas):
     canvas.nodelay(True)
 
     game_progress_window = canvas.derwin(
-        GameProgressWindowSettings.HEIGHT, GameProgressWindowSettings.WIDTH,
-        GameProgressWindowSettings.get_row_start(max_y), GameProgressWindowSettings.get_col_start()
+        GameProgressWindowSettings.HEIGHT,
+        GameProgressWindowSettings.WIDTH,
+        GameProgressWindowSettings.get_row_start(max_y),
+        GameProgressWindowSettings.get_col_start(),
     )
-    game_progress_window.border()
 
     global sleeping_events
     global obstacles
@@ -103,39 +150,40 @@ def draw(canvas):
 
     # STARS
     star_cores = get_star_coroutines(canvas, 300)
+    sleeping_events += [[0, star] for star in star_cores]
+
+    # GAME PROGRESS BAR
+    sleeping_events.append([0, show_game_progress(game_progress_window)])
+
+    # YEAR TIMER
+    sleeping_events.append([0, tick_time()])
 
     # SPACESHIP
-    spaceship_core = animate_spaceship(
-        canvas, max_y/2, max_x/2, sleeping_events, obstacles,
-    )
+    sleeping_events.append([0, animate_spaceship(canvas, max_y/2, max_x/2)])
 
     # SPACE GARBAGE
-    garbage_init_core = fill_orbit_with_garbage(canvas)
+    sleeping_events.append([0, fill_orbit_with_garbage(canvas)])
 
-    sleeping_events += [[0, star] for star in star_cores]
-    sleeping_events.append([0, show_game_progress(game_progress_window)])
-    sleeping_events.append([0, tick_time()])
-    sleeping_events.append([0, spaceship_core])
-    sleeping_events.append([0, garbage_init_core])
-    sleeping_events.append([0, show_obstacles(canvas, obstacles)])
+    if DEBUG:
+        # SHOW OBSTACLES
+        sleeping_events.append([0, show_obstacles(canvas, obstacles)])
 
     while True:
         min_delay, _ = min(sleeping_events, key=lambda event: event[0])
         _sleeping_events = [[timeout - min_delay, event] for timeout, event in sleeping_events]
         time.sleep(min_delay)
 
-        # делим евенты на активные и спящие
+        # split events on active and sleeping
         active_events = [[timeout, event] for timeout, event in _sleeping_events if timeout <= 0]
         _sleeping_events = [[timeout, event] for timeout, event in _sleeping_events if timeout > 0]
 
-        # Мув для сохранения одного id для sleeping_events
-        # удаление активных евентов и списка спящих
+        # for save sleeping_events's original global id
         sleeping_events_cores = [event[1] for event in _sleeping_events]
         for event in sleeping_events[:]:
             if event[1] not in sleeping_events_cores:
                 sleeping_events.remove(event)
 
-        # пересчет времени для спящих
+        # recalc sleep time for sleeping events
         for event in sleeping_events:
             for sl_event in _sleeping_events:
                 if event[1] == sl_event[1]:

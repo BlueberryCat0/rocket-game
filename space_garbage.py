@@ -3,6 +3,7 @@ import asyncio
 from curses_tools import draw_frame, get_frame_size
 from explosion import explode
 from obstacles import Obstacle
+from utils import load_frame
 
 
 class SpaceGarbage:
@@ -19,18 +20,13 @@ class SpaceGarbage:
 
     def __init__(self) -> None:
         self.frames = {
-            self.get_garbage_name(frame): self.load_frame(frame)
+            self.get_garbage_name(frame): load_frame(frame)
             for frame in self.FRAME_FILES
         }
 
     @staticmethod
     def get_garbage_name(path: str) -> str:
         return path.split('/')[-1].split('.')[0]
-
-    @staticmethod
-    def load_frame(path: str) -> str:
-        with open(path, 'r') as f:
-            return f.read()
 
 
 space_garbage = SpaceGarbage()

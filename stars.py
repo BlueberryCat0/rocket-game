@@ -1,5 +1,5 @@
-import random
 import curses
+import random
 
 from awaitable_sleep import AwaitableSleep
 from canvas_constants import MIN_CANVAS_COORDINATE, get_max_writable_x, get_max_writable_y
