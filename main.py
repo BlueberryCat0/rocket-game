@@ -4,12 +4,12 @@ import time
 
 from awaitable_sleep import AwaitableSleep
 from canvas_constants import get_max_writable_x, MIN_CANVAS_COORDINATE
-from game_scenario import get_garbage_delay_tics
+from curses_tools import draw_frame
+from game_scenario import get_garbage_delay_tics, PHRASES, DEFAULT_PHRASE
 from obstacles import show_obstacles
 from space_garbage import space_garbage, fly_garbage
 from spaceship import animate_spaceship
 from stars import get_star_coroutines
-from curses_tools import draw_frame
 
 TIC_TIMEOUT = 0.1
 YEAR_IN_SECONDS = 1.5
@@ -18,6 +18,20 @@ sleeping_events = []
 obstacles = []
 obstacles_in_last_collisions = []
 year = 1957
+
+
+class GameProgressWindowSettings:
+    HEIGHT = 5
+    WIDTH = 60
+    BORDER_DELTA = 1
+
+    @classmethod
+    def get_row_start(cls, max_y):
+        return max_y - cls.BORDER_DELTA - cls.HEIGHT
+
+    @classmethod
+    def get_col_start(cls):
+        return cls.BORDER_DELTA
 
 
 async def fill_orbit_with_garbage(canvas):
@@ -53,18 +67,23 @@ async def tick_time():
 async def show_game_progress(canvas):
     global year
 
-    game_progress_frame = f"""
------------------------------------------------------
-|                                                    |
-|                                                    |
-|                                                    |
-|                                                    |
------------------------------------------------------
-"""
-    game_progress_frame = 'вооооооооооооооооооооооооо'
     while True:
-        draw_frame(canvas, 5, 5, game_progress_frame)
+        canvas.border()
+
+        phrase = PHRASES.get(year, DEFAULT_PHRASE)
+        content = f'Year - {year}: {phrase}'
+        draw_frame(
+            canvas,
+            GameProgressWindowSettings.HEIGHT // 2, GameProgressWindowSettings.BORDER_DELTA,
+            content,
+        )
         await AwaitableSleep(1)
+        draw_frame(
+            canvas,
+            GameProgressWindowSettings.HEIGHT // 2, GameProgressWindowSettings.BORDER_DELTA,
+            content,
+            negative=True,
+        )
 
 
 def draw(canvas):
@@ -72,8 +91,11 @@ def draw(canvas):
     curses.curs_set(False)
     canvas.nodelay(True)
 
-    game_progress_window = canvas.derwin(1, 50, max_y // 10, max_x//2)
-    draw_frame(game_progress_window, 10, 10, 'вооооооооооооооооооооооооо')
+    game_progress_window = canvas.derwin(
+        GameProgressWindowSettings.HEIGHT, GameProgressWindowSettings.WIDTH,
+        GameProgressWindowSettings.get_row_start(max_y), GameProgressWindowSettings.get_col_start()
+    )
+    game_progress_window.border()
 
     global sleeping_events
     global obstacles
@@ -91,7 +113,7 @@ def draw(canvas):
     garbage_init_core = fill_orbit_with_garbage(canvas)
 
     sleeping_events += [[0, star] for star in star_cores]
-    # sleeping_events.append([0, show_game_progress(game_progress_window)])
+    sleeping_events.append([0, show_game_progress(game_progress_window)])
     sleeping_events.append([0, tick_time()])
     sleeping_events.append([0, spaceship_core])
     sleeping_events.append([0, garbage_init_core])
@@ -129,6 +151,7 @@ def draw(canvas):
                 sleeping_events.append([seconds_to_sleep, event[1]])
 
             canvas.refresh()
+            game_progress_window.refresh()
 
 
 if __name__ == '__main__':

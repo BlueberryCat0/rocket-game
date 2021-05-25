@@ -10,6 +10,8 @@ PHRASES = {
     2020: "Take the plasma gun! Shoot the garbage!",
 }
 
+DEFAULT_PHRASE = "No interesting:("
+
 
 def get_garbage_delay_tics(year):
     if year < 1961:
