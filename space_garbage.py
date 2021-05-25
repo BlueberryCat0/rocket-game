@@ -1,11 +1,7 @@
 import asyncio
-import random
 
-from awaitable_sleep import AwaitableSleep
-from canvas_constants import get_max_writable_x, MIN_CANVAS_COORDINATE
 from curses_tools import draw_frame, get_frame_size
 from explosion import explode
-from game_scenario import get_garbage_delay_tics
 from obstacles import Obstacle
 
 
@@ -38,25 +34,6 @@ class SpaceGarbage:
 
 
 space_garbage = SpaceGarbage()
-
-
-async def fill_orbit_with_garbage(canvas, events, obstacles, year):
-    _, max_x = canvas.getmaxyx()
-    while True:
-        print(year)
-        sleep_time = get_garbage_delay_tics(year)
-        if not sleep_time:
-            await asyncio.sleep(0)
-            continue
-
-        max_garbage_x = get_max_writable_x(max_x, 20)
-        garbage_x = random.randint(MIN_CANVAS_COORDINATE, max_garbage_x)
-        new_garbage_frame = random.choice(list(space_garbage.frames.values()))
-        events.append(
-            [0, fly_garbage(canvas, garbage_x, new_garbage_frame, obstacles=obstacles)]
-        )
-
-        await AwaitableSleep(sleep_time)
 
 
 def get_garbage_center(current_row, current_col, frame_row_size, frame_col_size):

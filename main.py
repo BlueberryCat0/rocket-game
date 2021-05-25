@@ -1,11 +1,15 @@
 import curses
+import random
 import time
 
+from awaitable_sleep import AwaitableSleep
+from canvas_constants import get_max_writable_x, MIN_CANVAS_COORDINATE
+from game_scenario import get_garbage_delay_tics
 from obstacles import show_obstacles
-from space_garbage import fill_orbit_with_garbage
+from space_garbage import space_garbage, fly_garbage
 from spaceship import animate_spaceship
 from stars import get_star_coroutines
-from awaitable_sleep import AwaitableSleep
+from curses_tools import draw_frame
 
 TIC_TIMEOUT = 0.1
 YEAR_IN_SECONDS = 1.5
@@ -16,6 +20,28 @@ obstacles_in_last_collisions = []
 year = 1957
 
 
+async def fill_orbit_with_garbage(canvas):
+    global sleeping_events
+    global obstacles
+    global year
+
+    _, max_x = canvas.getmaxyx()
+    while True:
+        sleep_time = get_garbage_delay_tics(year)
+        if not sleep_time:
+            await AwaitableSleep(YEAR_IN_SECONDS)
+            continue
+
+        max_garbage_x = get_max_writable_x(max_x, 20)
+        garbage_x = random.randint(MIN_CANVAS_COORDINATE, max_garbage_x)
+        new_garbage_frame = random.choice(list(space_garbage.frames.values()))
+        sleeping_events.append(
+            [0, fly_garbage(canvas, garbage_x, new_garbage_frame, obstacles=obstacles)]
+        )
+
+        await AwaitableSleep(sleep_time)
+
+
 async def tick_time():
     global year
 
@@ -23,13 +49,31 @@ async def tick_time():
         await AwaitableSleep(YEAR_IN_SECONDS)
         year += 1
 
-        # print(year)
+
+async def show_game_progress(canvas):
+    global year
+
+    game_progress_frame = f"""
+-----------------------------------------------------
+|                                                    |
+|                                                    |
+|                                                    |
+|                                                    |
+-----------------------------------------------------
+"""
+    game_progress_frame = 'вооооооооооооооооооооооооо'
+    while True:
+        draw_frame(canvas, 5, 5, game_progress_frame)
+        await AwaitableSleep(1)
 
 
 def draw(canvas):
     max_y, max_x = canvas.getmaxyx()
     curses.curs_set(False)
     canvas.nodelay(True)
+
+    game_progress_window = canvas.derwin(1, 50, max_y // 10, max_x//2)
+    draw_frame(game_progress_window, 10, 10, 'вооооооооооооооооооооооооо')
 
     global sleeping_events
     global obstacles
@@ -44,9 +88,10 @@ def draw(canvas):
     )
 
     # SPACE GARBAGE
-    garbage_init_core = fill_orbit_with_garbage(canvas, sleeping_events, obstacles, year)
+    garbage_init_core = fill_orbit_with_garbage(canvas)
 
     sleeping_events += [[0, star] for star in star_cores]
+    # sleeping_events.append([0, show_game_progress(game_progress_window)])
     sleeping_events.append([0, tick_time()])
     sleeping_events.append([0, spaceship_core])
     sleeping_events.append([0, garbage_init_core])
