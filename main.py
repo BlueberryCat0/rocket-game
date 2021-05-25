@@ -1,38 +1,29 @@
 import curses
-import random
 import time
 
-from awaitable_sleep import AwaitableSleep
-from canvas_constants import MIN_CANVAS_COORDINATE, get_max_writable_x
 from obstacles import show_obstacles
-from space_garbage import fly_garbage, space_garbage
+from space_garbage import fill_orbit_with_garbage
 from spaceship import animate_spaceship
 from stars import get_star_coroutines
+from awaitable_sleep import AwaitableSleep
 
 TIC_TIMEOUT = 0.1
+YEAR_IN_SECONDS = 1.5
 
 sleeping_events = []
 obstacles = []
 obstacles_in_last_collisions = []
+year = 1957
 
 
-async def fill_orbit_with_garbage(canvas):
-    global sleeping_events
-    global obstacles
+async def tick_time():
+    global year
 
-    _, max_x = canvas.getmaxyx()
     while True:
-        max_garbage_x = get_max_writable_x(max_x, 20)
-        garbage_x = random.randint(MIN_CANVAS_COORDINATE, max_garbage_x)
-        sleeping_events.append(
-            [
-                0,
-                fly_garbage(
-                    canvas, garbage_x, space_garbage.frames['trash_xl'], obstacles=obstacles,
-                )
-            ]
-        )
-        await AwaitableSleep(2)
+        await AwaitableSleep(YEAR_IN_SECONDS)
+        year += 1
+
+        # print(year)
 
 
 def draw(canvas):
@@ -42,6 +33,7 @@ def draw(canvas):
 
     global sleeping_events
     global obstacles
+    global year
 
     # STARS
     star_cores = get_star_coroutines(canvas, 300)
@@ -52,9 +44,10 @@ def draw(canvas):
     )
 
     # SPACE GARBAGE
-    garbage_init_core = fill_orbit_with_garbage(canvas)
+    garbage_init_core = fill_orbit_with_garbage(canvas, sleeping_events, obstacles, year)
 
     sleeping_events += [[0, star] for star in star_cores]
+    sleeping_events.append([0, tick_time()])
     sleeping_events.append([0, spaceship_core])
     sleeping_events.append([0, garbage_init_core])
     sleeping_events.append([0, show_obstacles(canvas, obstacles)])
