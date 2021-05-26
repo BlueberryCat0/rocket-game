@@ -7,11 +7,16 @@ Just play and feel old.
 
 ![preview](docs/images/preview.jpeg)
 
-## How to play?
+## How to start?
 
 1. Clone repo: `git clone https://github.com/BlueberryCat0/rocket-game.git`
 2. Run game from folder: `python3 main.py`
 3. And enjoy...
+
+## How to play?
+
+Arrow control `↑`, `↓`, `←`, `→`.  
+Fire on space `␣` (from 2020 year).
 
 ## Requirements
 Game has been tested with:
